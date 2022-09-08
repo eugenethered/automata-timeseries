@@ -7,5 +7,5 @@ curl --request POST \
   --header "Accept: application/csv" \
   --header "Content-type: application/vnd.flux" \
   --data 'from(bucket:"automata")
-        |> range(start: -72h)
+        |> range(start: 2022-01-01T00:00:00Z)
         |> filter(fn: (r) => r._measurement == "timeseries-test")'

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 
-from coreutility.date_utility import as_nano_second_timestamp
+from coreutility.date.NanoTimestamp import NanoTimestamp
 from influxdb_client import InfluxDBClient, Point
 
 INFLUXDB_SERVER_ADDRESS = 'INFLUXDB_SERVER_ADDRESS'
@@ -37,11 +37,11 @@ class InfluxDBProvider:
             if time is not None:
                 point.time(time)
             write_client.write(bucket=self.bucket, record=point)
-        print(f'writing for time[{time}] {instrument} {price}')
 
     def get_timeseries_data(self, measurement, instrument):
+        print('getting timeseries data...')
         query = f'from(bucket: "{self.bucket}")' \
-                ' |> range(start: -1h, stop: now())' \
+                ' |> range(start: -30d, stop: now())' \
                 f' |> filter(fn: (r) => r["_measurement"] == "{measurement}")' \
                 f' |> filter(fn: (r) => r["instrument"] == "{instrument}")' \
                 ' |> filter(fn: (r) => r["_field"] == "price")'
@@ -49,15 +49,15 @@ class InfluxDBProvider:
         results = []
         for table in tables:
             for record in table.records:
-                print(f'data -> [{as_nano_second_timestamp(record["_time"])}] {record["_time"]} {record["_value"]}')
-                results.append((as_nano_second_timestamp(record["_time"]), record["_value"]))
+                results.append((NanoTimestamp.as_nanoseconds(record["_time"]), record["_value"]))
         return results
 
     def delete_timeseries(self, measurement):
         time_now = datetime.now()
         # influx 'default' timestamps can slightly be in the future (see _stop which is 10s faster)
+        # also, delete does not use nano (full) seconds! (use datetime) [delete of influx is different & needs to be consistent]
         time_now_future = time_now + timedelta(hours=1)
         time_in_past = time_now - timedelta(days=30)
-        end_time = as_nano_second_timestamp(time_now_future)
-        start_time = as_nano_second_timestamp(time_in_past)
+        end_time = time_now_future
+        start_time = time_in_past
         self.delete_api.delete(start_time, end_time, f'_measurement="{measurement}"', bucket=self.bucket, org=self.auth_org)
