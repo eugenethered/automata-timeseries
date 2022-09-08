@@ -8,7 +8,7 @@ cat <<EOF
 {
   "start": "2022-01-01T00:00:00Z",
   "stop": "$DATETIME_NOW",
-  "predicate": "instrument=test"
+  "predicate": "_measurement=\"timeseries-test\""
 }
 EOF
 }

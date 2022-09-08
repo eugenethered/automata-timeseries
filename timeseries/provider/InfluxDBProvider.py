@@ -1,8 +1,10 @@
 import logging
+import time
 from datetime import datetime, timedelta
 
 from coreutility.date.NanoTimestamp import NanoTimestamp
-from influxdb_client import InfluxDBClient, Point
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS, WriteOptions
 
 INFLUXDB_SERVER_ADDRESS = 'INFLUXDB_SERVER_ADDRESS'
 INFLUXDB_SERVER_PORT = 'INFLUXDB_SERVER_PORT'
@@ -27,6 +29,7 @@ class InfluxDBProvider:
             self.influxdb_client = InfluxDBClient(url=influxdb_url, token=self.auth_token, org=self.auth_org)
             self.query_api = self.influxdb_client.query_api()
             self.delete_api = self.influxdb_client.delete_api()
+            self.write_api = self.influxdb_client.write_api(write_options=SYNCHRONOUS)
 
     def can_connect(self):
         return self.influxdb_client.ping()
@@ -35,10 +38,17 @@ class InfluxDBProvider:
         with self.influxdb_client.write_api() as write_client:
             point = Point(measurement).tag("instrument", instrument).field("price", price)
             if time is not None:
-                point.time(time)
+                point.time(time, write_precision=WritePrecision.NS)
             write_client.write(bucket=self.bucket, record=point)
 
+    def batch_add_to_timeseries(self, measurement, data):
+        # if in for!
+        points = [Point(measurement).tag("instrument", d[0]).field("price", d[1]).time(NanoTimestamp.get_nanoseconds()) for d in data]
+        with self.influxdb_client.write_api() as write_client:
+            write_client.write(bucket=self.bucket, record=points)
+
     def get_timeseries_data(self, measurement, instrument):
+        # todo: refine
         print('getting timeseries data...')
         query = f'from(bucket: "{self.bucket}")' \
                 ' |> range(start: -30d, stop: now())' \
