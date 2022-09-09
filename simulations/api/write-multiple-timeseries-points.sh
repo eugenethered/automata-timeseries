@@ -12,4 +12,5 @@ curl --request POST \
     timeseries-test,instrument=test price=111.0 1662482768962413104
     timeseries-test,instrument=test price=0.000000000012 1662482974593347564
     timeseries-test,instrument=test price=0.00 1662489746609256622
+    timeseries-test,instrument=test price=0.000000000001 1662752474914966498
   '
