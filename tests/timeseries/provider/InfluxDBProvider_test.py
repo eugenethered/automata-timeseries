@@ -23,7 +23,7 @@ class InfluxDBProviderTestCase(unittest.TestCase):
 
     def tearDown(self):
         timeseries_provider = InfluxDBProvider(self.options)
-        #timeseries_provider.delete_timeseries('timeseries-test')
+        timeseries_provider.delete_timeseries('timeseries-test')
 
     def test_should_connect_to_influxdb_server(self):
         timeseries_provider = InfluxDBProvider(self.options)
@@ -61,11 +61,13 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         ]
         timeseries_provider.batch_add_to_timeseries('timeseries-test', data)
         timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
-        timeseries_data_values = [point[1] for point in timeseries_data]
-        print(timeseries_data_values)
-        # todo: check!
-        # expected = [(1, 10.0), (2, 11.0), (3, 12.0)]
-        # self.assertEqual(expected, timeseries_data)
+        expected = [10.0, 11.0, 12.0]
+        self.assertRegex(timeseries_data[0][0].__str__(), r'^\d{19}$')
+        self.assertEqual(expected[0], timeseries_data[0][1])
+        self.assertRegex(timeseries_data[1][0].__str__(), r'^\d{19}$')
+        self.assertEqual(expected[1], timeseries_data[1][1])
+        self.assertRegex(timeseries_data[2][0].__str__(), r'^\d{19}$')
+        self.assertEqual(expected[2], timeseries_data[2][1])
 
 
 if __name__ == '__main__':
