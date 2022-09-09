@@ -30,16 +30,13 @@ class InfluxDBProvider:
             self.influxdb_client = InfluxDBClient(url=influxdb_url, token=self.auth_token, org=self.auth_org)
             self.query_api = self.influxdb_client.query_api()
             self.delete_api = self.influxdb_client.delete_api()
-            self.write_api = self.influxdb_client.write_api(write_options=SYNCHRONOUS)
 
     def can_connect(self):
         return self.influxdb_client.ping()
 
     def add_to_timeseries(self, measurement, instrument, price, time=None):
         with self.influxdb_client.write_api() as write_client:
-            point = Point(measurement).tag("instrument", instrument).field("price", price)
-            if time is not None:
-                point.time(time, write_precision=WritePrecision.NS)
+            point = build_point(measurement, instrument, price, time)
             write_client.write(bucket=self.bucket, record=point)
 
     def batch_add_to_timeseries(self, measurement, data):
@@ -48,8 +45,6 @@ class InfluxDBProvider:
             write_client.write(bucket=self.bucket, record=points)
 
     def get_timeseries_data(self, measurement, instrument):
-        # todo: refine
-        print('getting timeseries data...')
         query = f'from(bucket: "{self.bucket}")' \
                 ' |> range(start: -30d, stop: now())' \
                 f' |> filter(fn: (r) => r["_measurement"] == "{measurement}")' \
@@ -63,7 +58,6 @@ class InfluxDBProvider:
         return results
 
     def delete_timeseries(self, measurement):
-        # todo: refine
         time_now = datetime.now()
         # influx 'default' timestamps can slightly be in the future (see _stop which is 10s faster)
         # also, delete does not use nano (full) seconds! (use datetime) [delete of influx is different & needs to be consistent]
