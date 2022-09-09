@@ -1,10 +1,11 @@
 import logging
-import time
 from datetime import datetime, timedelta
 
 from coreutility.date.NanoTimestamp import NanoTimestamp
 from influxdb_client import InfluxDBClient, Point, WritePrecision
-from influxdb_client.client.write_api import SYNCHRONOUS, WriteOptions
+from influxdb_client.client.write_api import SYNCHRONOUS
+
+from timeseries.provider.point.PointBuilder import build_point
 
 INFLUXDB_SERVER_ADDRESS = 'INFLUXDB_SERVER_ADDRESS'
 INFLUXDB_SERVER_PORT = 'INFLUXDB_SERVER_PORT'
@@ -42,8 +43,7 @@ class InfluxDBProvider:
             write_client.write(bucket=self.bucket, record=point)
 
     def batch_add_to_timeseries(self, measurement, data):
-        # if in for!
-        points = [Point(measurement).tag("instrument", d[0]).field("price", d[1]).time(NanoTimestamp.get_nanoseconds()) for d in data]
+        points = [build_point(measurement, d[0], d[1], d[2] if len(d) > 2 else None) for d in data]
         with self.influxdb_client.write_api() as write_client:
             write_client.write(bucket=self.bucket, record=points)
 
@@ -63,6 +63,7 @@ class InfluxDBProvider:
         return results
 
     def delete_timeseries(self, measurement):
+        # todo: refine
         time_now = datetime.now()
         # influx 'default' timestamps can slightly be in the future (see _stop which is 10s faster)
         # also, delete does not use nano (full) seconds! (use datetime) [delete of influx is different & needs to be consistent]
