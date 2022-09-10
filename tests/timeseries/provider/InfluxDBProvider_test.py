@@ -1,6 +1,7 @@
 import logging
 import unittest
 
+from core.number.BigFloat import BigFloat
 from coreutility.date.NanoTimestamp import NanoTimestamp
 
 from timeseries.provider.InfluxDBProvider import InfluxDBProvider
@@ -41,7 +42,7 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
         (point_timestamp, point_value) = timeseries_data[0]
         self.assertRegex(point_timestamp.__str__(), r'^\d{19}$')
-        self.assertEqual(point_value, 1.00)
+        self.assertEqual(point_value, BigFloat('1.00'))
 
     def test_should_store_time_series_point_with_specified_date(self):
         timeseries_provider = InfluxDBProvider(self.options)
@@ -51,10 +52,11 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         (point_timestamp, point_value) = timeseries_data[0]
         # although full nano supplied, results come back as nano-ish!
         self.assertEqual(point_timestamp - (point_timestamp % 1000), supplied_time - (supplied_time % 1000))
-        self.assertEqual(point_value, 2.00)
+        self.assertEqual(point_value, BigFloat('2.00'))
 
     def test_should_store_multiple_time_series_points_without_specifying_time(self):
         timeseries_provider = InfluxDBProvider(self.options)
+        # todo: need conversion sorted
         data = [
             ('test', 10.00),
             ('test', 11.00),
@@ -62,7 +64,7 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         ]
         timeseries_provider.batch_add_to_timeseries('timeseries-test', data)
         timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
-        expected = [10.0, 11.0, 12.0]
+        expected = [BigFloat('10.0'), BigFloat('11.0'), BigFloat('12.0')]
         self.assertRegex(timeseries_data[0][0].__str__(), r'^\d{19}$')
         self.assertEqual(expected[0], timeseries_data[0][1])
         self.assertRegex(timeseries_data[1][0].__str__(), r'^\d{19}$')
@@ -81,9 +83,9 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
         # although full nano supplied, results come back as nano-ish!
         expected = [
-            (data[0][2] - (data[0][2] % 1000), 10.0),
-            (data[1][2] - (data[1][2] % 1000), 11.0),
-            (data[2][2] - (data[2][2] % 1000), 12.0)
+            (data[0][2] - (data[0][2] % 1000), BigFloat('10.0')),
+            (data[1][2] - (data[1][2] % 1000), BigFloat('11.0')),
+            (data[2][2] - (data[2][2] % 1000), BigFloat('12.0'))
         ]
         self.assertEqual(expected[0][0], timeseries_data[0][0])
         self.assertEqual(expected[0][1], timeseries_data[0][1])

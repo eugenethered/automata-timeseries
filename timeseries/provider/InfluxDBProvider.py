@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 
+from core.number.BigFloat import BigFloat
 from coreutility.date.NanoTimestamp import NanoTimestamp
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -54,7 +55,8 @@ class InfluxDBProvider:
         results = []
         for table in tables:
             for record in table.records:
-                results.append((NanoTimestamp.as_nanoseconds(record["_time"]), record["_value"]))
+                print(f'time:[{NanoTimestamp.as_nanoseconds(record["_time"])}] value:[{record["_value"]}] - {type(record["_value"])} - BigFloat:[{BigFloat(str(record["_value"]))}]')
+                results.append((NanoTimestamp.as_nanoseconds(record["_time"]), BigFloat(str(record["_value"]))))
         return results
 
     def delete_timeseries(self, measurement):
