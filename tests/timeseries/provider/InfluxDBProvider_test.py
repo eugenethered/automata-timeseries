@@ -54,6 +54,15 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         self.assertEqual(point_timestamp - (point_timestamp % 1000), supplied_time - (supplied_time % 1000))
         self.assertEqual(point_value, BigFloat('2.00'))
 
+    def test_should_store_time_series_point_but_override_specified_date_when_not_full_nano(self):
+        timeseries_provider = InfluxDBProvider(self.options)
+        supplied_time = 1648913430060
+        timeseries_provider.add_to_timeseries('timeseries-test', 'test', BigFloat('115.16'), supplied_time)
+        timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
+        (point_timestamp, point_value) = timeseries_data[0]
+        self.assertRegex(point_timestamp.__str__(), r'^\d{19}$', 'should override non-nano time')
+        self.assertEqual(point_value, BigFloat('115.16'))
+
     def test_should_store_multiple_time_series_points_without_specifying_time(self):
         timeseries_provider = InfluxDBProvider(self.options)
         data = [

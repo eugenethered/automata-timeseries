@@ -8,6 +8,10 @@ def build_point(measurement, instrument, price: BigFloat, nano_timestamp=None) -
     if nano_timestamp is None:
         point.time(NanoTimestamp.get_nanoseconds())
     else:
-        point.time(nano_timestamp)
+        nano_time_to_use = nano_timestamp if is_full_nanotime(nano_timestamp) else NanoTimestamp.get_nanoseconds()
+        point.time(nano_time_to_use)
     return point
 
+
+def is_full_nanotime(value):
+    return True if len(str(value)) == 19 else False
