@@ -35,7 +35,7 @@ class InfluxDBProvider:
     def can_connect(self):
         return self.influxdb_client.ping()
 
-    def add_to_timeseries(self, measurement, instrument, price, time=None):
+    def add_to_timeseries(self, measurement, instrument, price: BigFloat, time=None):
         with self.influxdb_client.write_api() as write_client:
             point = build_point(measurement, instrument, price, time)
             write_client.write(bucket=self.bucket, record=point)
