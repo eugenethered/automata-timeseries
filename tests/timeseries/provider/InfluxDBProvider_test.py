@@ -117,6 +117,11 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         self.assertEqual(expected[0], latest_timeseries_data[0])
         self.assertEqual(expected[1], latest_timeseries_data[1])
 
+    def test_should_not_obtain_latest_rate(self):
+        timeseries_provider = InfluxDBProvider(self.options)
+        latest_timeseries_data = timeseries_provider.get_latest_timeseries_data('timeseries-test', 'test')
+        self.assertIsNone(latest_timeseries_data)
+
 
 if __name__ == '__main__':
     unittest.main()
