@@ -58,13 +58,13 @@ class InfluxDBProvider:
         with self.influxdb_client.write_api() as write_client:
             write_client.write(bucket=self.bucket, record=points)
 
-    def get_timeseries_data(self, measurement, instrument):
-        # todo: need improved range
+    def get_timeseries_data(self, measurement, instrument, range_from='-30d', range_to='now()'):
         query = f'from(bucket: "{self.bucket}")' \
-                ' |> range(start: -30d, stop: now())' \
+                f' |> range(start: {range_from}, stop: {range_to})' \
                 f' |> filter(fn: (r) => r["_measurement"] == "{measurement}")' \
                 f' |> filter(fn: (r) => r["instrument"] == "{instrument}")' \
-                ' |> filter(fn: (r) => r["_field"] == "price")'
+                ' |> filter(fn: (r) => r["_field"] == "price")' \
+                ' |> sort(columns: ["_time"], desc: true)'
         tables = self.influxdb_client.query_api().query(query, org=self.auth_org)
         results = []
         for table in tables:
@@ -72,13 +72,13 @@ class InfluxDBProvider:
                 results.append((NanoTimestamp.as_nanoseconds(record["_time"]), BigFloat(str(record["_value"]))))
         return results
 
-    def delete_timeseries(self, measurement):
-        # todo: need improved range
+    def delete_timeseries(self, measurement, range_from='-30d', range_to='now()'):
         time_now = datetime.now()
         # influx 'default' timestamps can slightly be in the future (see _stop which is 10s faster)
         # also, delete does not use nano (full) seconds! (use datetime) [delete of influx is different & needs to be consistent]
-        time_now_future = time_now + timedelta(hours=1)
-        time_in_past = time_now - timedelta(days=30)
+        time_now_future = time_now + timedelta(minutes=1) if range_to == 'now()' else time_now + timedelta(minutes=int(range_to))
+        range_from_normalize = int(range_from.replace('d', '').replace('-', ''))
+        time_in_past = time_now - timedelta(days=range_from_normalize)
         end_time = time_now_future
         start_time = time_in_past
         self.delete_api.delete(start_time, end_time, f'_measurement="{measurement}"', bucket=self.bucket, org=self.auth_org)

@@ -71,8 +71,9 @@ class InfluxDBProviderTestCase(unittest.TestCase):
             ('test', BigFloat('12.00'))
         ]
         timeseries_provider.batch_add_to_timeseries('timeseries-test', data)
+        # will always return in descending order (latest 1st)
         timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
-        expected = [BigFloat('10.0'), BigFloat('11.0'), BigFloat('12.0')]
+        expected = [BigFloat('12.0'), BigFloat('11.0'), BigFloat('10.0')]
         self.assertRegex(timeseries_data[0][0].__str__(), r'^\d{19}$')
         self.assertEqual(expected[0], timeseries_data[0][1])
         self.assertRegex(timeseries_data[1][0].__str__(), r'^\d{19}$')
@@ -89,11 +90,11 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         ]
         timeseries_provider.batch_add_to_timeseries('timeseries-test', data)
         timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
-        # although full nano supplied, results come back as nano-ish!
+        # although full nano supplied, results come back as nano-ish! times are from original ;)
         expected = [
-            (data[0][2] - (data[0][2] % 1000), BigFloat('1.0')),
+            (data[2][2] - (data[2][2] % 1000), BigFloat('123456789012.123456789012')),
             (data[1][2] - (data[1][2] % 1000), BigFloat('0.000000000012')),
-            (data[2][2] - (data[2][2] % 1000), BigFloat('123456789012.123456789012'))
+            (data[0][2] - (data[0][2] % 1000), BigFloat('1.0'))
         ]
         self.assertEqual(expected[0][0], timeseries_data[0][0])
         self.assertEqual(expected[0][1], timeseries_data[0][1])
