@@ -92,9 +92,9 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         timeseries_data = timeseries_provider.get_timeseries_data('timeseries-test', 'test')
         # although full nano supplied, results come back as nano-ish! times are from original ;)
         expected = [
-            (data[2][2] - (data[2][2] % 1000), BigFloat('123456789012.123456789012')),
-            (data[1][2] - (data[1][2] % 1000), BigFloat('0.000000000012')),
-            (data[0][2] - (data[0][2] % 1000), BigFloat('1.0'))
+            (NanoTimestamp.as_shorted_nanoseconds(data[2][2]), BigFloat('123456789012.123456789012')),
+            (NanoTimestamp.as_shorted_nanoseconds(data[1][2]), BigFloat('0.000000000012')),
+            (NanoTimestamp.as_shorted_nanoseconds(data[0][2]), BigFloat('1.0'))
         ]
         self.assertEqual(expected[0][0], timeseries_data[0][0])
         self.assertEqual(expected[0][1], timeseries_data[0][1])
@@ -102,6 +102,20 @@ class InfluxDBProviderTestCase(unittest.TestCase):
         self.assertEqual(expected[1][1], timeseries_data[1][1])
         self.assertEqual(expected[2][0], timeseries_data[2][0])
         self.assertEqual(expected[2][1], timeseries_data[2][1])
+
+    def test_should_store_multiple_time_series_points_and_retrieve_only_the_latest_rate(self):
+        timeseries_provider = InfluxDBProvider(self.options)
+        data = [
+            ('test', BigFloat('1.00'), NanoTimestamp.get_nanoseconds()),
+            ('test', BigFloat('0.000000000012'), NanoTimestamp.get_nanoseconds()),
+            ('test', BigFloat('123456789012.123456789012'), NanoTimestamp.get_nanoseconds())
+        ]
+        timeseries_provider.batch_add_to_timeseries('timeseries-test', data)
+        latest_timeseries_data = timeseries_provider.get_latest_timeseries_data('timeseries-test', 'test')
+        # although full nano supplied, results come back as nano-ish! times are from original ;)
+        expected = (NanoTimestamp.as_shorted_nanoseconds(data[2][2]), BigFloat('123456789012.123456789012'))
+        self.assertEqual(expected[0], latest_timeseries_data[0])
+        self.assertEqual(expected[1], latest_timeseries_data[1])
 
 
 if __name__ == '__main__':

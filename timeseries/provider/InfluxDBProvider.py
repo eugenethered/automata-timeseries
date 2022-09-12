@@ -72,6 +72,21 @@ class InfluxDBProvider:
                 results.append((NanoTimestamp.as_nanoseconds(record["_time"]), BigFloat(str(record["_value"]))))
         return results
 
+    def get_latest_timeseries_data(self, measurement, instrument, range_from='-30d', range_to='now()'):
+        query = f'from(bucket: "{self.bucket}")' \
+                f' |> range(start: {range_from}, stop: {range_to})' \
+                f' |> filter(fn: (r) => r["_measurement"] == "{measurement}")' \
+                f' |> filter(fn: (r) => r["instrument"] == "{instrument}")' \
+                ' |> filter(fn: (r) => r["_field"] == "price")' \
+                ' |> sort(columns: ["_time"], desc: true)' \
+                ' |> limit(n:1)'
+        tables = self.influxdb_client.query_api().query(query, org=self.auth_org)
+        result = ()
+        for table in tables:
+            for record in table.records:
+                result = (NanoTimestamp.as_nanoseconds(record["_time"]), BigFloat(str(record["_value"])))
+        return result
+
     def delete_timeseries(self, measurement, range_from='-30d', range_to='now()'):
         time_now = datetime.now()
         # influx 'default' timestamps can slightly be in the future (see _stop which is 10s faster)
